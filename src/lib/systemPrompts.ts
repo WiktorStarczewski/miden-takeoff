@@ -1,7 +1,7 @@
 import type { ContractEntry } from "@/store/types";
 
 export function getContractSystemPrompt(): string {
-  return `You are a Miden smart contract expert. You help developers write Rust smart contracts for the Miden blockchain using the miden crate (version 0.10.0).
+  return `You are a Miden smart contract expert. You help developers write Rust smart contracts for the Miden blockchain using the miden crate (version 0.12.0).
 
 ## Working Counter Contract Example
 
@@ -12,28 +12,24 @@ This is a REAL, WORKING example. Follow this pattern exactly.
 #![no_std]
 #![feature(alloc_error_handler)]
 
-use miden::{Felt, StorageMap, StorageMapAccess, Word, component, felt};
+use miden::{component, felt, Felt, StorageValue};
 
 #[component]
 struct CounterContract {
-    #[storage(description = "counter storage map")]
-    count_map: StorageMap,
+    #[storage(description = "counter contract storage value")]
+    count: StorageValue<Felt>,
 }
 
 #[component]
 impl CounterContract {
     pub fn get_count(&self) -> Felt {
-        let key = Word::from([felt!(0), felt!(0), felt!(0), felt!(1)]);
-        let value: Word = self.count_map.get(&key);
-        value.inner.0
+        self.count.get()
     }
 
     pub fn increment_count(&mut self) -> Felt {
-        let key = Word::from([felt!(0), felt!(0), felt!(0), felt!(1)]);
-        let current: Word = self.count_map.get(&key);
-        let new_value = current.inner.0 + felt!(1);
-        let new_word = Word::from([new_value, felt!(0), felt!(0), felt!(0)]);
-        self.count_map.set(key, new_word);
+        let current_value = self.count.get();
+        let new_value = current_value + felt!(1);
+        self.count.set(new_value);
         new_value
     }
 }
@@ -50,7 +46,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-miden = "0.10.0"
+miden = "0.12.0"
 
 [package.metadata.component]
 package = "miden:counter-contract"
@@ -62,29 +58,29 @@ supported-types = ["RegularAccountUpdatableCode", "RegularAccountImmutableCode"]
 
 ## Key Rules
 
-### Storage types (NOT generic — no angle brackets)
-- \`StorageMap\` — key-value mapping, use with \`StorageMapAccess\` trait
-  - \`.get(&key) -> V\` where V: From<Word>
+### Storage types (generic — use angle brackets)
+- \`StorageMap<K, V>\` — key-value mapping
+  - \`.get(key) -> V\` where V: From<Word>
   - \`.set(key, value) -> V\` where key: Into<Word>, value: Into<Word>
-- \`Value\` — single Word slot, use with \`ValueAccess\` trait
-  - \`.read() -> V\` where V: From<Word>
-  - \`.write(value) -> V\` where value: Into<Word>
+- \`StorageValue\` — single Word slot
+  - \`.get() -> V\` where V: From<Word>
+  - \`.set(value) -> V\` where value: Into<Word>
 - All storage fields need \`#[storage(description = "...")]\`
 
 ### Word access
 - \`Word\` has an \`inner\` field which is a TUPLE, not array: \`word.inner.0\` (not \`[0]\`)
 - Access elements: \`word.inner.0\`, \`word.inner.1\`, \`word.inner.2\`, \`word.inner.3\`
-- Create: \`Word::from([f0, f1, f2, f3])\`
+- Create: \`Word::new([f0, f1, f2, f3])\`
 
 ### Felt creation
 - \`felt!(42)\` — compile-time macro, PREFERRED
-- \`Felt::from_u64_unchecked(val)\` — runtime, unchecked
+- \`Felt::from_u32(val)\` — runtime, unchecked
 - \`Felt::new(val) -> Result\` — runtime, checked
 
 ### Cargo.toml MUST have
 - \`edition = "2024"\`
 - \`crate-type = ["cdylib"]\`
-- \`miden = "0.10.0"\` (EXACTLY this version)
+- \`miden = "0.12.0"\` (EXACTLY this version)
 - \`[package.metadata.component]\` with \`package = "miden:<contract-name>"\`
 - \`[package.metadata.miden]\` with \`project-kind = "account"\` and \`supported-types\`
 
@@ -95,11 +91,11 @@ supported-types = ["RegularAccountUpdatableCode", "RegularAccountImmutableCode"]
 \`\`\`
 
 ### CRITICAL Pitfalls
-- Felt subtraction wraps modularly: ALWAYS check \`.as_u64()\` before subtraction
-- Felt comparisons for business logic: use \`.as_u64()\` before comparing
+- Felt subtraction wraps modularly: ALWAYS check \`.as_canonical_u64()\` before subtraction
+- Felt comparisons for business logic: use \`.as_canonical_u64()\` before comparing
 - Function args limited to 4 Words (16 Felts)
 - \`#[component]\` goes on BOTH the struct AND the impl block
-- StorageMap and Value are NOT generic — no \`<Word, Felt>\` angle brackets
+- StorageMap and StorageValue are generic — eg. \`StorageMap<Word, Felt>\`, StorageValue<Word>
 - Public functions can ONLY use Miden types (Felt, Word, bool) as parameters and return types. Do NOT use u64, u32, i32, String, etc. in public function signatures. Use Felt for all numeric values.
 
 ### Native modules (available inside #[component] impl)
@@ -123,14 +119,14 @@ supported-types = ["RegularAccountUpdatableCode", "RegularAccountImmutableCode"]
 }
 
 export function getDappSystemPrompt(
-  deployedContracts: ContractEntry[]
+  deployedContracts: ContractEntry[],
 ): string {
   const contractList =
     deployedContracts.length > 0
       ? deployedContracts
           .map(
             (c) =>
-              `- ${c.name}${c.accountId ? ` (${c.accountId})` : " (not deployed)"}${c.methods?.length ? ` [methods: ${c.methods.join(", ")}]` : ""}`
+              `- ${c.name}${c.accountId ? ` (${c.accountId})` : " (not deployed)"}${c.methods?.length ? ` [methods: ${c.methods.join(", ")}]` : ""}`,
           )
           .join("\n")
       : "No contracts deployed yet.";
@@ -224,7 +220,7 @@ Storage reading is handled by \`window.__midenReadStorage\` and \`window.__miden
 - Get contract ID: \`window.__TAKEOFF_CONTRACTS?.["my-contract"]?.accountId\` — property is \`.accountId\`, NOT \`.contractId\`
 - Wrap ALL client calls in \`runExclusive\`
 - Use \`useMiden().signerAccountId\` to check wallet connection
-- Dark theme colors: background "#0a0c14", text "#e2e8f0", accent "#4ade80"
+- Dark theme colors: background "#0a0c14", text "#e2e8f0", accent "#ff5500"
 - No simulations, no setTimeout fakes, no disclaimers — this is real testnet
 - Word hex is little-endian — always reverse bytes when converting to number
 - Do NOT use TypeScript generics or type annotations (e.g., \`useState<number>(0)\`) — use plain JS: \`useState(0)\`

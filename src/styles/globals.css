@@ -1,13 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   :root {
     /* Base canvas */
     --background: 228 12% 4%;
     --foreground: 0 0% 95%;
-    --primary: 142 71% 45%;
+    --primary: #ff5500;
     --primary-foreground: 0 0% 2%;
     --muted: 228 8% 15%;
     --muted-foreground: 228 8% 55%;
@@ -24,11 +22,11 @@
     --glass-elevated-blur: 30px;
 
     /* Accent glows */
-    --primary-glow: 0 0 20px rgba(74, 222, 128, 0.15);
-    --primary-glow-strong: 0 0 30px rgba(74, 222, 128, 0.25);
+    --primary-glow: 0 0 20px rgba(255, 85, 0, 0.15);
+    --primary-glow-strong: 0 0 30px rgba(255, 85, 0, 0.25);
 
     /* Status */
-    --success: 142 71% 45%;
+    --success: #ff5500;
     --warning: 38 92% 50%;
     --error: 0 84% 60%;
 
@@ -45,7 +43,8 @@
   }
 
   body {
-    background: radial-gradient(
+    background:
+      radial-gradient(
         ellipse at 20% 50%,
         rgba(74, 222, 128, 0.03) 0%,
         transparent 50%
@@ -85,7 +84,8 @@
     backdrop-filter: blur(var(--glass-elevated-blur));
     -webkit-backdrop-filter: blur(var(--glass-elevated-blur));
     border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
       inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 

@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "miden-takeoff-api",
+  "main": "src/worker.ts",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+  },
+  "vars": {
+    "NODE_ENV": "production",
+    "PORT": "8081",
+    "ALLOWED_ORIGINS": "https://miden-takeoff.walnut.dev",
+    "API_COMPILE_URL": "https://miden-sourcify-api-compile.walnut.dev",
+    "GLOBAL_DAILY_BUDGET": "100000",
+    "PER_IP_DAILY_BUDGET": "50000",
+  },
+  "secrets": {
+    "required": ["ANTHROPIC_API_KEY"],
+  },
+  "kv_namespaces": [
+    {
+      "binding": "BUDGET",
+      "id": "57ec82b95bbf4107b1f5ed3de050e259",
+      // "remote": true,
+    },
+  ],
+}

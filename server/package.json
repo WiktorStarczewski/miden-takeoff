@@ -1,0 +1,30 @@
+{
+  "name": "miden-takeoff-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc && tsc-alias",
+    "start": "node dist/src/server.js",
+    "typecheck": "tsc --noEmit",
+    "cf:dev": "wrangler dev --port 8081",
+    "cf:deploy": "wrangler deploy",
+    "cf:typegen": "wrangler types",
+    "cf:tail": "wrangler tail"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.0",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "tsc-alias": "^1.8.10",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.90.0"
+  }
+}

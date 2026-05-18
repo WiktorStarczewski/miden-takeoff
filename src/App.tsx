@@ -30,7 +30,7 @@ export default function App() {
     <MidenFiSignerProvider
       network={WalletAdapterNetwork.Testnet}
       appName="Miden Takeoff"
-      autoConnect={true}
+      // autoConnect={true}
       storageMode="public"
     >
       <MidenProvider
@@ -46,7 +46,8 @@ export default function App() {
         errorComponent={(error) => (
           <div className="h-screen w-screen flex flex-col items-center justify-center gap-4">
             <span className="text-sm text-red-400">
-              Failed to initialize: {error instanceof Error ? error.message : String(error)}
+              Failed to initialize:{" "}
+              {error instanceof Error ? error.message : String(error)}
             </span>
           </div>
         )}

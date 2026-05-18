@@ -4,13 +4,15 @@ export interface StreamCallbacks {
   onError: (error: string) => void;
 }
 
+const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8081";
+
 export async function streamChat(
   messages: { role: "user" | "assistant"; content: string }[],
   systemPrompt: string,
   callbacks: StreamCallbacks,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
-  const res = await fetch("/api/chat", {
+  const res = await fetch(`${apiUrl}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages, systemPrompt }),

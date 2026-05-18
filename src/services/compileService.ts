@@ -10,12 +10,14 @@ export interface CompileCallbacks {
   onError: (error: string) => void;
 }
 
+const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8081";
+
 export async function compileContract(
   files: Record<string, string>,
   callbacks: CompileCallbacks,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
-  const res = await fetch("/api/compile", {
+  const res = await fetch(`${apiUrl}/api/compile`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ files }),

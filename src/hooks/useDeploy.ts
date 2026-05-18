@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { snakeCase } from "lodash";
 import { useMiden, useSyncState } from "@miden-sdk/react";
 import { usePlaygroundStore } from "@/store/usePlaygroundStore";
 
@@ -35,7 +36,7 @@ export function useDeploy() {
         const result = await runExclusive(async () => {
           // 1. Decode base64 → Uint8Array
           const maspBytes = Uint8Array.from(atob(maspBase64), (c) =>
-            c.charCodeAt(0)
+            c.charCodeAt(0),
           );
 
           // 2. Deserialize compiled package
@@ -44,10 +45,8 @@ export function useDeploy() {
           // 3. Construct StorageSlotArray with named slots from the contract
           //    The .masp package expects slots matching the #[storage] fields
           //    Slot name pattern: "miden::component::<package_underscored>::<field>"
-          const {
-            StorageSlot,
-            StorageMap: StorageMapClass,
-          } = await import("@miden-sdk/miden-sdk");
+          const { StorageSlot, StorageMap: StorageMapClass } =
+            await import("@miden-sdk/miden-sdk");
 
           const slots = new StorageSlotArray();
 
@@ -59,10 +58,14 @@ export function useDeploy() {
 
           // Get component package name and convert to slot name prefix
           const pkgMatch = cargoToml.match(
-            /\[package\.metadata\.component\][\s\S]*?package\s*=\s*"([^"]+)"/
+            /\[package\.metadata\.component\][\s\S]*?package\s*=\s*"([^"]+)"/,
           );
           const compPkg = pkgMatch?.[1] ?? ""; // e.g. "miden:counter-contract"
-          const slotPrefix = `miden::component::${compPkg.replace(/[:-]/g, "_")}`;
+          const structNameMatch = libRs.match(
+            /struct\s+([A-Za-z_][A-Za-z0-9_]*)/,
+          );
+          const structName = structNameMatch?.[1] ?? ""; // e.g. "CounterContract"
+          const slotPrefix = `${compPkg.replace(/[:-]/g, "_")}::${snakeCase(structName)}`;
 
           // Find storage fields
           const storageFields = [
@@ -81,11 +84,17 @@ export function useDeploy() {
                 appendConsole("info", `  Storage slot (value): ${slotName}`);
               }
             } catch (e) {
-              appendConsole("warn", `  Failed to create slot ${slotName}: ${e}`);
+              appendConsole(
+                "warn",
+                `  Failed to create slot ${slotName}: ${e}`,
+              );
               // Fallback: try the other type
               try {
                 slots.push(StorageSlot.emptyValue(slotName));
-                appendConsole("info", `  Storage slot (fallback value): ${slotName}`);
+                appendConsole(
+                  "info",
+                  `  Storage slot (fallback value): ${slotName}`,
+                );
               } catch {
                 appendConsole("error", `  Cannot create slot ${slotName}`);
               }
@@ -93,13 +102,17 @@ export function useDeploy() {
           }
 
           // 4. Create component from package with storage slots
-          const component = AccountComponent.fromPackage(pkg, slots)
-            .withSupportsAllTypes();
+          const component = AccountComponent.fromPackage(
+            pkg,
+            slots,
+          ).withSupportsAllTypes();
 
           // 5. Build account
           const initSeed = crypto.getRandomValues(new Uint8Array(32));
           let builder = new AccountBuilder(initSeed);
-          builder = builder.accountType(AccountType.RegularAccountUpdatableCode);
+          builder = builder.accountType(
+            AccountType.RegularAccountUpdatableCode,
+          );
           builder = builder.storageMode(AccountStorageMode.public());
           builder = builder.withNoAuthComponent();
           builder = builder.withComponent(component);
@@ -111,13 +124,25 @@ export function useDeploy() {
           // Debug: inspect the account's storage before saving
           const storage = account.storage();
           const slotNames = storage.getSlotNames();
-          appendConsole("info", `  Account storage slots after build: [${slotNames.join(", ")}]`);
+          appendConsole(
+            "info",
+            `  Account storage slots after build: [${slotNames.join(", ")}]`,
+          );
           for (const name of slotNames) {
             const val = storage.getItem(name);
-            appendConsole("info", `    ${name} = ${val ? val.toHex() : "null"}`);
+            appendConsole(
+              "info",
+              `    ${name} = ${val ? val.toHex() : "null"}`,
+            );
           }
-          appendConsole("info", `  Account code commitment: ${account.code().commitment().toHex()}`);
-          appendConsole("info", `  Account storage commitment: ${storage.commitment().toHex()}`);
+          appendConsole(
+            "info",
+            `  Account code commitment: ${account.code().commitment().toHex()}`,
+          );
+          appendConsole(
+            "info",
+            `  Account storage commitment: ${storage.commitment().toHex()}`,
+          );
 
           // 6. Store locally
           await client.newAccount(account, false);
@@ -126,7 +151,10 @@ export function useDeploy() {
           const readBack = await client.getAccount(account.id());
           if (readBack) {
             const rbSlots = readBack.storage().getSlotNames();
-            appendConsole("info", `  Read-back storage slots: [${rbSlots.join(", ")}]`);
+            appendConsole(
+              "info",
+              `  Read-back storage slots: [${rbSlots.join(", ")}]`,
+            );
           } else {
             appendConsole("warn", `  Could not read back account after saving`);
           }
@@ -141,7 +169,7 @@ export function useDeploy() {
         setDeployStatus(contractName, "deployed", result.accountId);
         appendConsole(
           "success",
-          `Deployed ${contractName}: ${result.accountId}`
+          `Deployed ${contractName}: ${result.accountId}`,
         );
 
         return result;
@@ -162,7 +190,7 @@ export function useDeploy() {
       setDeployStatus,
       setContractError,
       appendConsole,
-    ]
+    ],
   );
 
   return { deploy, isReady };

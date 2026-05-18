@@ -15,10 +15,10 @@ export function WalletButton() {
 
       // Reset all app state
       const contractFiles = new Map(
-        getTemplatesForMode("contracts").map((f) => [f.path, f])
+        getTemplatesForMode("contracts").map((f) => [f.path, f]),
       );
       const dappFiles = new Map(
-        getTemplatesForMode("dapp").map((f) => [f.path, f])
+        getTemplatesForMode("dapp").map((f) => [f.path, f]),
       );
       usePlaygroundStore.setState({
         contractFiles,
@@ -44,7 +44,7 @@ export function WalletButton() {
     }
   };
 
-  const displayName = connected ? signer?.name ?? "Connected" : null;
+  const displayName = connected ? (signer?.name ?? "Connected") : null;
 
   return (
     <button
@@ -53,7 +53,7 @@ export function WalletButton() {
         "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 border",
         connected
           ? "border-primary/30 text-foreground glow-green"
-          : "border-white/[0.08] text-muted-foreground hover:text-foreground hover:border-white/[0.12] animate-pulse-glow"
+          : "border-white/[0.08] text-muted-foreground hover:text-foreground hover:border-white/[0.12] animate-pulse-glow",
       )}
     >
       <Wallet className="h-3.5 w-3.5" />

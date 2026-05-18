@@ -16,22 +16,25 @@ export interface ChatRequest {
   systemPrompt: string;
 }
 
-export async function* streamChat(
-  req: ChatRequest
-): AsyncGenerator<string, void, unknown> {
+export function startChat(req: ChatRequest) {
   const stream = getClient().messages.stream({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-4-6",
     max_tokens: 16384,
+    cache_control: { type: "ephemeral" },
     system: req.systemPrompt,
     messages: req.messages,
   });
 
-  for await (const event of stream) {
-    if (
-      event.type === "content_block_delta" &&
-      event.delta.type === "text_delta"
-    ) {
-      yield event.delta.text;
+  async function* textChunks(): AsyncGenerator<string, void, unknown> {
+    for await (const event of stream) {
+      if (
+        event.type === "content_block_delta" &&
+        event.delta.type === "text_delta"
+      ) {
+        yield event.delta.text;
+      }
     }
   }
+
+  return { stream, textChunks: textChunks() };
 }
