@@ -6,6 +6,7 @@ dist-server/
 !.env.*.example
 *.local
 .vite/
+.DS_Store
 
 # Cloudflare Workers
 .wrangler/

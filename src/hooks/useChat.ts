@@ -2,13 +2,18 @@ import { useCallback, useRef } from "react";
 import { usePlaygroundStore } from "@/store/usePlaygroundStore";
 import { streamChat } from "@/services/chatService";
 import { extractCodeBlocks } from "@/lib/codeParser";
-import { getContractSystemPrompt, getDappSystemPrompt } from "@/lib/systemPrompts";
+import {
+  getContractSystemPrompt,
+  getDappSystemPrompt,
+} from "@/lib/systemPrompts";
 
 export function useChat() {
   const mode = usePlaygroundStore((s) => s.mode);
   const getChat = usePlaygroundStore((s) => s.getChat);
   const addMessage = usePlaygroundStore((s) => s.addMessage);
-  const updateStreamingMessage = usePlaygroundStore((s) => s.updateStreamingMessage);
+  const updateStreamingMessage = usePlaygroundStore(
+    (s) => s.updateStreamingMessage,
+  );
   const finalizeStream = usePlaygroundStore((s) => s.finalizeStream);
   const streamingMessageId = usePlaygroundStore((s) => s.streamingMessageId);
   const contracts = usePlaygroundStore((s) => s.contracts);
@@ -52,6 +57,7 @@ export function useChat() {
       abortRef.current = new AbortController();
 
       await streamChat(
+        mode,
         apiMessages,
         systemPrompt,
         {
@@ -67,8 +73,13 @@ export function useChat() {
             usePlaygroundStore.setState({
               [key]: state[key].map((msg) =>
                 msg.id === assistantId
-                  ? { ...msg, content: fullContent, isStreaming: false, codeBlocks }
-                  : msg
+                  ? {
+                      ...msg,
+                      content: fullContent,
+                      isStreaming: false,
+                      codeBlocks,
+                    }
+                  : msg,
               ),
               streamingMessageId: null,
             });
@@ -78,7 +89,7 @@ export function useChat() {
             finalizeStream();
           },
         },
-        abortRef.current.signal
+        abortRef.current.signal,
       );
     },
     [
@@ -89,7 +100,7 @@ export function useChat() {
       updateStreamingMessage,
       finalizeStream,
       contracts,
-    ]
+    ],
   );
 
   const stop = useCallback(() => {
@@ -103,9 +114,7 @@ export function useChat() {
       const codeBlocks = msg ? extractCodeBlocks(msg.content) : [];
       usePlaygroundStore.setState({
         [key]: state[key].map((m: { id: string; content: string }) =>
-          m.id === smId
-            ? { ...m, isStreaming: false, codeBlocks }
-            : m
+          m.id === smId ? { ...m, isStreaming: false, codeBlocks } : m,
         ),
         streamingMessageId: null,
       });

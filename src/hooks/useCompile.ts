@@ -55,18 +55,21 @@ export function useCompile() {
       let fullContent = "";
       const systemPrompt = getContractSystemPrompt();
       const messages = [
-        ...state.contractChat.map((m) => ({ role: m.role, content: m.content })),
+        ...state.contractChat.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
         { role: "user" as const, content: fixPrompt },
       ];
 
-      streamChat(messages, systemPrompt, {
+      streamChat(state.mode, messages, systemPrompt, {
         onChunk: (text) => {
           fullContent += text;
           usePlaygroundStore.setState((s) => ({
             contractChat: s.contractChat.map((msg) =>
               msg.id === assistantMsgId
                 ? { ...msg, content: fullContent }
-                : msg
+                : msg,
             ),
           }));
         },
@@ -75,8 +78,13 @@ export function useCompile() {
           usePlaygroundStore.setState((s) => ({
             contractChat: s.contractChat.map((msg) =>
               msg.id === assistantMsgId
-                ? { ...msg, content: fullContent, isStreaming: false, codeBlocks }
-                : msg
+                ? {
+                    ...msg,
+                    content: fullContent,
+                    isStreaming: false,
+                    codeBlocks,
+                  }
+                : msg,
             ),
             streamingMessageId: null,
           }));
@@ -93,11 +101,18 @@ export function useCompile() {
 
               const files = usePlaygroundStore.getState().contractFiles;
               if (files.has(block.suggestedPath)) {
-                usePlaygroundStore.getState().updateFile(block.suggestedPath, block.code);
+                usePlaygroundStore
+                  .getState()
+                  .updateFile(block.suggestedPath, block.code);
               } else {
-                usePlaygroundStore.getState().createFile(block.suggestedPath, block.code, lang);
+                usePlaygroundStore
+                  .getState()
+                  .createFile(block.suggestedPath, block.code, lang);
               }
-              appendConsole("info", `Auto-applied fix to ${block.suggestedPath}`);
+              appendConsole(
+                "info",
+                `Auto-applied fix to ${block.suggestedPath}`,
+              );
             }
           }
 
@@ -109,8 +124,12 @@ export function useCompile() {
           usePlaygroundStore.setState((s) => ({
             contractChat: s.contractChat.map((msg) =>
               msg.id === assistantMsgId
-                ? { ...msg, content: fullContent + `\n\n*Error: ${error}*`, isStreaming: false }
-                : msg
+                ? {
+                    ...msg,
+                    content: fullContent + `\n\n*Error: ${error}*`,
+                    isStreaming: false,
+                  }
+                : msg,
             ),
             streamingMessageId: null,
           }));
@@ -118,7 +137,7 @@ export function useCompile() {
         },
       });
     },
-    [appendConsole]
+    [appendConsole],
   );
 
   const compile = useCallback(
@@ -138,11 +157,13 @@ export function useCompile() {
       const libRs = files["src/lib.rs"] ?? "";
 
       // Parse component package from Cargo.toml: package = "miden:counter-contract"
-      const pkgMatch = cargoToml.match(/\[package\.metadata\.component\][\s\S]*?package\s*=\s*"([^"]+)"/);
+      const pkgMatch = cargoToml.match(
+        /\[package\.metadata\.component\][\s\S]*?package\s*=\s*"([^"]+)"/,
+      );
       const componentPackage = pkgMatch?.[1] ?? "";
 
       // Parse public method names from lib.rs: pub fn method_name
-      const methods = [...libRs.matchAll(/pub\s+fn\s+(\w+)/g)].map(m => m[1]);
+      const methods = [...libRs.matchAll(/pub\s+fn\s+(\w+)/g)].map((m) => m[1]);
 
       // Store metadata on the contract entry
       if (componentPackage || methods.length > 0) {
@@ -151,7 +172,11 @@ export function useCompile() {
           const contracts = new Map(state.contracts);
           const entry = contracts.get(contractName);
           if (entry) {
-            contracts.set(contractName, { ...entry, componentPackage, methods });
+            contracts.set(contractName, {
+              ...entry,
+              componentPackage,
+              methods,
+            });
           }
           return { contracts };
         });
@@ -170,7 +195,7 @@ export function useCompile() {
                 monacoInstance.editor.setModelMarkers(
                   model,
                   "cargo-miden",
-                  markers
+                  markers,
                 );
               }
             }
@@ -183,7 +208,7 @@ export function useCompile() {
 
             if (result.packageBase64) {
               const bytes = Uint8Array.from(atob(result.packageBase64), (c) =>
-                c.charCodeAt(0)
+                c.charCodeAt(0),
               );
               setPackageBytes(contractName, bytes);
             }
@@ -192,13 +217,18 @@ export function useCompile() {
             if (result.txScripts) {
               const txScriptBytes: Record<string, Uint8Array> = {};
               for (const [method, base64] of Object.entries(result.txScripts)) {
-                txScriptBytes[method] = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+                txScriptBytes[method] = Uint8Array.from(atob(base64), (c) =>
+                  c.charCodeAt(0),
+                );
               }
               usePlaygroundStore.setState((state) => {
                 const contracts = new Map(state.contracts);
                 const entry = contracts.get(contractName);
                 if (entry) {
-                  contracts.set(contractName, { ...entry, txScripts: txScriptBytes });
+                  contracts.set(contractName, {
+                    ...entry,
+                    txScripts: txScriptBytes,
+                  });
                 }
                 return { contracts };
               });
@@ -207,11 +237,7 @@ export function useCompile() {
             // Clear diagnostics on success
             if (monacoInstance) {
               for (const model of monacoInstance.editor.getModels()) {
-                monacoInstance.editor.setModelMarkers(
-                  model,
-                  "cargo-miden",
-                  []
-                );
+                monacoInstance.editor.setModelMarkers(model, "cargo-miden", []);
               }
             }
           } else {
@@ -241,7 +267,7 @@ export function useCompile() {
       setContractError,
       addContract,
       appendConsole,
-    ]
+    ],
   );
 
   return { compile };

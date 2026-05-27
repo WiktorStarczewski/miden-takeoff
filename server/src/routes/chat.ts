@@ -5,6 +5,7 @@ import { checkBudget, recordUsage } from "@/lib/rateLimit.js";
 const router = Router();
 
 interface ChatBody {
+  mode: "contracts" | "dapp";
   messages: { role: "user" | "assistant"; content: string }[];
   systemPrompt: string;
 }
@@ -18,7 +19,7 @@ function clientIp(req: Request): string {
 }
 
 router.post("/chat", async (req: Request, res: Response) => {
-  const { messages, systemPrompt } = req.body as ChatBody;
+  const { mode, messages, systemPrompt } = req.body as ChatBody;
 
   if (!messages || !systemPrompt) {
     res.status(400).json({ error: "Missing messages or systemPrompt" });
@@ -49,7 +50,7 @@ router.post("/chat", async (req: Request, res: Response) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  const { stream, textChunks } = startChat({ messages, systemPrompt });
+  const { stream, textChunks } = startChat({ mode, messages, systemPrompt });
 
   try {
     for await (const chunk of textChunks) {
