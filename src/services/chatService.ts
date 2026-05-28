@@ -1,3 +1,5 @@
+import { PlaygroundMode } from "@/store/types";
+
 export interface StreamCallbacks {
   onChunk: (text: string) => void;
   onDone: () => void;
@@ -7,6 +9,7 @@ export interface StreamCallbacks {
 const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8081";
 
 export async function streamChat(
+  mode: PlaygroundMode,
   messages: { role: "user" | "assistant"; content: string }[],
   systemPrompt: string,
   callbacks: StreamCallbacks,
@@ -15,7 +18,7 @@ export async function streamChat(
   const res = await fetch(`${apiUrl}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, systemPrompt }),
+    body: JSON.stringify({ mode, messages, systemPrompt }),
     signal,
   });
 

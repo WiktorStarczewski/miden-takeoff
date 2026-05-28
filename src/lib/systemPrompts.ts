@@ -56,55 +56,6 @@ project-kind = "account"
 supported-types = ["RegularAccountUpdatableCode", "RegularAccountImmutableCode"]
 \`\`\`
 
-## Key Rules
-
-### Storage types (generic — use angle brackets)
-- \`StorageMap<K, V>\` — key-value mapping
-  - \`.get(key) -> V\` where V: From<Word>
-  - \`.set(key, value) -> V\` where key: Into<Word>, value: Into<Word>
-- \`StorageValue\` — single Word slot
-  - \`.get() -> V\` where V: From<Word>
-  - \`.set(value) -> V\` where value: Into<Word>
-- All storage fields need \`#[storage(description = "...")]\`
-
-### Word access
-- \`Word\` has an \`inner\` field which is a TUPLE, not array: \`word.inner.0\` (not \`[0]\`)
-- Access elements: \`word.inner.0\`, \`word.inner.1\`, \`word.inner.2\`, \`word.inner.3\`
-- Create: \`Word::new([f0, f1, f2, f3])\`
-
-### Felt creation
-- \`felt!(42)\` — compile-time macro, PREFERRED
-- \`Felt::from_u32(val)\` — runtime, unchecked
-- \`Felt::new(val) -> Result\` — runtime, checked
-
-### Cargo.toml MUST have
-- \`edition = "2024"\`
-- \`crate-type = ["cdylib"]\`
-- \`miden = "0.12.0"\` (EXACTLY this version)
-- \`[package.metadata.component]\` with \`package = "miden:<contract-name>"\`
-- \`[package.metadata.miden]\` with \`project-kind = "account"\` and \`supported-types\`
-
-### File headers — REQUIRED on every .rs file
-\`\`\`rust
-#![no_std]
-#![feature(alloc_error_handler)]
-\`\`\`
-
-### CRITICAL Pitfalls
-- Felt subtraction wraps modularly: ALWAYS check \`.as_canonical_u64()\` before subtraction
-- Felt comparisons for business logic: use \`.as_canonical_u64()\` before comparing
-- Function args limited to 4 Words (16 Felts)
-- \`#[component]\` goes on BOTH the struct AND the impl block
-- StorageMap and StorageValue are generic — eg. \`StorageMap<Word, Felt>\`, StorageValue<Word>
-- Public functions can ONLY use Miden types (Felt, Word, bool) as parameters and return types. Do NOT use u64, u32, i32, String, etc. in public function signatures. Use Felt for all numeric values.
-
-### Native modules (available inside #[component] impl)
-- \`native_account::add_asset(Asset)\`, \`remove_asset(Asset)\`
-- \`active_account::get_id()\`, \`get_balance(AccountId)\`
-- \`output_note::create(Tag, NoteType, Recipient)\`
-- \`faucet::create_fungible_asset(Felt)\`, \`mint(Asset)\`, \`burn(Asset)\`
-- \`tx::get_block_number()\`, \`get_block_timestamp()\`
-
 ## Output format
 - Output code in fenced blocks with file path on first line:
   \`\`\`rust
@@ -113,7 +64,9 @@ supported-types = ["RegularAccountUpdatableCode", "RegularAccountImmutableCode"]
   \`\`\`toml
   // /Cargo.toml
   \`\`\`
-- ALWAYS output both lib.rs AND Cargo.toml for new contracts
+- ALWAYS output both src/lib.rs AND Cargo.toml for new contracts
+- ALWAYS use /src/lib.rs and /Cargo.toml as file paths in code blocks.
+- Assume the contract will use the \`NoAuth\` authentication component, never use \`native_account::incr_nonce()\` in methods.
 - Keep contracts focused and minimal
 - Explain what the contract does before showing code`;
 }
@@ -165,7 +118,7 @@ ${contractList}
      return account;
    }, [client, CONTRACT_ID]);
    \`\`\`
-2. Read storage inside runExclusive:
+2. Read storage:
    \`\`\`
    const account = await getContractAccount();
    const slotNames = account.storage().getSlotNames();
@@ -179,7 +132,7 @@ ${contractList}
    }
    \`\`\`
 3. Initialize counter state with 0: \`useState(0)\` — NOT \`useState(null)\`
-4. \`getItem\` returns the actual value for both Value and StorageMap slots (patched SDK)
+4. \`getItem\` returns the actual value Value slots, use \`getMapItem(slotName: string, key: Word)\` for StorageMap slots.
 5. Hex conversion: first 16 chars after "0x", reverse bytes (little-endian)
 
 **Do NOT use TypeScript generics like \`useState<number | null>(null)\` — the preview doesn't support TypeScript annotations. Use plain \`useState(0)\`.**
@@ -196,13 +149,12 @@ Keys are Rust method names with underscores (e.g., \`increment_count\`, \`get_co
 5. Build request: \`new TransactionRequestBuilder().withCustomScript(txScript).build()\`
 6. Submit against the CONTRACT account object: \`await client.submitNewTransaction(account.id(), txRequest)\`
    **CRITICAL: Use account.id() from getContractAccount(), NEVER signerAccountId. The transaction must execute against the contract, not the wallet.**
-7. Close the \`runExclusive\` block, THEN sync and re-read:
+7. Sync and re-read:
    \`\`\`
-   }); // end runExclusive
+   });
    await sync();
    await readCounterValue();
    \`\`\`
-   **CRITICAL: sync() and re-read MUST be OUTSIDE runExclusive. Putting them inside causes a deadlock.**
 
 ## Required Imports
 
@@ -218,7 +170,6 @@ Storage reading is handled by \`window.__midenReadStorage\` and \`window.__miden
 - Single default-exported function component
 - Only import from "react", "@miden-sdk/react", "@miden-sdk/miden-sdk"
 - Get contract ID: \`window.__TAKEOFF_CONTRACTS?.["my-contract"]?.accountId\` — property is \`.accountId\`, NOT \`.contractId\`
-- Wrap ALL client calls in \`runExclusive\`
 - Use \`useMiden().signerAccountId\` to check wallet connection
 - Dark theme colors: background "#0a0c14", text "#e2e8f0", accent "#ff5500"
 - No simulations, no setTimeout fakes, no disclaimers — this is real testnet

@@ -1,0 +1,3 @@
+[submodule "server/agent-tools"]
+	path = server/agent-tools
+	url = https://github.com/0xMiden/agent-tools
