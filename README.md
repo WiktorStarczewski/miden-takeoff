@@ -3,7 +3,7 @@
 An AI-powered browser IDE for building smart contracts and dApps on the [Miden](https://miden.xyz) blockchain. Generate Rust smart contracts through natural language, compile them to WASM, deploy to testnet, and build interactive dApps — all from a single interface.
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![Miden SDK](https://img.shields.io/badge/miden--sdk-0.13.4-green)
+![Miden SDK](https://img.shields.io/badge/miden--sdk-0.14.10-green)
 ![TypeScript](https://img.shields.io/badge/typescript-strict-blue)
 
 ## What is this?
