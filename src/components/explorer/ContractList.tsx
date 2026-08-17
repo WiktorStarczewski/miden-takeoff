@@ -1,6 +1,7 @@
 import { usePlaygroundStore } from "@/store/usePlaygroundStore";
 import { useCompile } from "@/hooks/useCompile";
 import { useDeploy } from "@/hooks/useDeploy";
+import { uint8ArrayToBase64 } from "@/lib/base64";
 import { cn } from "@/lib/cn";
 import { Box, Copy, Check, Play, Loader2, Upload, X } from "lucide-react";
 import { useState } from "react";
@@ -102,9 +103,7 @@ function ContractItem({
 
   const handleDeploy = async () => {
     if (!contract.packageBytes) return;
-    const base64 = btoa(
-      String.fromCharCode(...contract.packageBytes)
-    );
+    const base64 = uint8ArrayToBase64(contract.packageBytes);
     await deploy(contract.name, base64);
   };
 
